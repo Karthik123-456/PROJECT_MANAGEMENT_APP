@@ -16,7 +16,9 @@ export function createProjectController(projectService, memberService, activityS
       res.status(201).json({ project });
     },
     get(req, res) {
-      res.status(200).json({ project: req.access.project });
+      res.status(200).json({
+        project: { ...req.access.project, role: req.access.role },
+      });
     },
     update(req, res) {
       const project = projectService.update({

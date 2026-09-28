@@ -32,7 +32,7 @@ paths:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Project'
+                          $ref: '#/components/schemas/ProjectWithRole'
     post:
       summary: Create a project and add the caller as owner
       requestBody:
@@ -58,7 +58,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/ProjectId'
     get:
-      summary: Get a project
+      summary: Get a project and the caller's membership role
       responses:
         '200':
           description: Project
@@ -69,7 +69,7 @@ paths:
                 required: [project]
                 properties:
                   project:
-                    $ref: '#/components/schemas/Project'
+                    $ref: '#/components/schemas/ProjectWithRole'
         '404':
           $ref: '#/components/responses/Error'
     patch:
@@ -318,7 +318,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/ProjectId'
     get:
-      summary: Get project stories, task progress, and nested tasks
+      summary: Get project details including the caller's role, stories, progress, and nested tasks
       responses:
         '200':
           description: Project tree
@@ -608,6 +608,15 @@ components:
         updated_at:
           type: string
           format: date-time
+    ProjectWithRole:
+      allOf:
+        - $ref: '#/components/schemas/Project'
+        - type: object
+          required: [role]
+          properties:
+            role:
+              type: string
+              enum: [owner, member, viewer]
     ProjectInput:
       type: object
       additionalProperties: false
@@ -920,7 +929,7 @@ components:
       required: [project, stories]
       properties:
         project:
-          $ref: '#/components/schemas/Project'
+          $ref: '#/components/schemas/ProjectWithRole'
         stories:
           type: array
           items:

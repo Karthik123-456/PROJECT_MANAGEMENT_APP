@@ -87,9 +87,11 @@ export function createStoryTaskController(service) {
       ));
     },
     tree(req, res) {
-      res.status(200).json(
-        service.getTree(req.access.project, req.access.project.id),
-      );
+      const tree = service.getTree(req.access.project, req.access.project.id);
+      res.status(200).json({
+        ...tree,
+        project: { ...tree.project, role: req.access.role },
+      });
     },
   };
 }

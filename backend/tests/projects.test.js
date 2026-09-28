@@ -84,6 +84,40 @@ describe('Phase 4a project access and API', () => {
     expect(members.body).toMatchObject({ total: 1, limit: 20, offset: 0 });
   });
 
+  it('returns the caller role in project detail and tree responses', async () => {
+    const project = await createProject(users.alice);
+    await addMember(users.alice, project.id, users.bob.email, 'member');
+    await addMember(users.alice, project.id, users.charlie.email, 'viewer');
+
+    for (const [user, role] of [
+      [users.alice, 'owner'],
+      [users.bob, 'member'],
+      [users.charlie, 'viewer'],
+    ]) {
+      const detail = await as(user, 'get', `/api/v1/projects/${project.id}`);
+      const tree = await as(user, 'get', `/api/v1/projects/${project.id}/tree`);
+
+      expect(detail.status).toBe(200);
+      expect(detail.body.project.role).toBe(role);
+      expect(tree.status).toBe(200);
+      expect(tree.body.project.role).toBe(role);
+    }
+
+    const outsiderDetail = await as(
+      users.outsider,
+      'get',
+      `/api/v1/projects/${project.id}`,
+    );
+    const outsiderTree = await as(
+      users.outsider,
+      'get',
+      `/api/v1/projects/${project.id}/tree`,
+    );
+    expect(outsiderDetail.status).toBe(404);
+    expect(outsiderTree.status).toBe(404);
+    expect(outsiderTree.body).toEqual(outsiderDetail.body);
+  });
+
   it('returns identical 404s to a non-member for missing and existing projects, members, and activity', async () => {
     const project = await createProject(users.alice);
     const existingResponses = await Promise.all([
