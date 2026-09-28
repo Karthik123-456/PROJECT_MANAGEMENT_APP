@@ -1,0 +1,78 @@
+@baseUrl = http://localhost:4000/api/v1
+@ownerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImlhdCI6MTc5MDU5NzM3MCwiZXhwIjoxNzkwNjAwOTcwfQ.4o7agckuU0C5akZibpmKnizNT3QAP21VAZxO8UuGOrA
+@memberToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsImlhdCI6MTc5MDU5NzM3MCwiZXhwIjoxNzkwNjAwOTcwfQ.0Wffi0ZP-EXdFPOjEhmLoLr9YIoJ_RHuT9KpGFnE4I4
+@projectId = 1
+@memberId = 3
+
+### Create a project (the caller is added as owner)
+POST {{baseUrl}}/projects
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "name": "Demo project",
+  "description": "A project for trying the API"
+}
+
+### List active projects for the caller
+GET {{baseUrl}}/projects?status=active&limit=20&offset=0
+Authorization: Bearer {{ownerToken}}
+
+### Read one project
+GET {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{ownerToken}}
+
+### Update project details
+PATCH {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated demo project"
+}
+
+### Add a member or viewer by email
+POST {{baseUrl}}/projects/{{projectId}}/members
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "email": "bob@agile-tool.test",
+  "role": "member"
+}
+
+### List project members
+GET {{baseUrl}}/projects/{{projectId}}/members?limit=20&offset=0
+Authorization: Bearer {{memberToken}}
+
+### Change a member role (owner only)
+PATCH {{baseUrl}}/projects/{{projectId}}/members/{{memberId}}
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "role": "viewer"
+}
+
+### Search users to add
+GET {{baseUrl}}/users?search=char
+Authorization: Bearer {{ownerToken}}
+
+### Read recent project activity
+GET {{baseUrl}}/projects/{{projectId}}/activity?limit=20&offset=0
+Authorization: Bearer {{memberToken}}
+
+### Remove a member (owner only)
+DELETE {{baseUrl}}/projects/{{projectId}}/members/{{memberId}}
+Authorization: Bearer {{ownerToken}}
+
+### Archive a project (204, no response body)
+DELETE {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{ownerToken}}
+
+### Restore an archived project
+POST {{baseUrl}}/projects/{{projectId}}/restore
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{}

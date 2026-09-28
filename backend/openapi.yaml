@@ -1,0 +1,456 @@
+openapi: 3.0.3
+info:
+  title: Agile Tool API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /projects:
+    get:
+      summary: List projects the authenticated user belongs to
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, archived]
+            default: active
+      responses:
+        '200':
+          description: Paginated projects including the caller's role
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Pagination'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+    post:
+      summary: Create a project and add the caller as owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '201':
+          description: Created project
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [project]
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+        '422':
+          $ref: '#/components/responses/Error'
+  /projects/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      summary: Get a project
+      responses:
+        '200':
+          description: Project
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [project]
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+        '404':
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Update project name or description (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectPatch'
+      responses:
+        '200':
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Archive a project (owner only)
+      responses:
+        '204':
+          description: Project archived; no response body
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /projects/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      summary: Restore an archived project (owner only)
+      responses:
+        '200':
+          description: Restored project
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /projects/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      summary: List project members
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Paginated members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMembers'
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Add a member or viewer (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInput'
+      responses:
+        '201':
+          description: Added member
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /projects/{id}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      summary: Change a member's role (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [member, viewer]
+      responses:
+        '200':
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Remove a member (owner only)
+      responses:
+        '204':
+          description: Member removed; no response body
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /projects/{id}/activity:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      summary: List recent project activity
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Paginated activity, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivity'
+        '404':
+          $ref: '#/components/responses/Error'
+  /users:
+    get:
+      summary: Search users by name or email
+      parameters:
+        - in: query
+          name: search
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+      responses:
+        '200':
+          description: Up to 20 matching safe user projections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
+        '422':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    ProjectId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Limit:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Offset:
+      in: query
+      name: offset
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  responses:
+    Error:
+      description: Standard API error envelope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              nullable: true
+    Pagination:
+      type: object
+      required: [data, total, limit, offset]
+      properties:
+        data:
+          type: array
+          items: {}
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+    Project:
+      type: object
+      required: [id, name, description, owner_id, archived_at, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+        owner_id:
+          type: integer
+        role:
+          type: string
+          enum: [owner, member, viewer]
+        archived_at:
+          type: string
+          nullable: true
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProjectInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+    ProjectPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+    Member:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [owner, member, viewer]
+    MemberInput:
+      type: object
+      additionalProperties: false
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [member, viewer]
+    User:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        actor_id:
+          type: integer
+          nullable: true
+        actor_name:
+          type: string
+          nullable: true
+        entity_type:
+          type: string
+        entity_id:
+          type: integer
+        action:
+          type: string
+        meta:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+    PaginatedMembers:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Member'
+    PaginatedUsers:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+    PaginatedActivity:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Activity'
