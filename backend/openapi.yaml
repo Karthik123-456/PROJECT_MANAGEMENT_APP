@@ -252,6 +252,271 @@ paths:
                 $ref: '#/components/schemas/PaginatedUsers'
         '422':
           $ref: '#/components/responses/Error'
+  /projects/{id}/stories:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      summary: List project stories
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [backlog, in_progress, in_review, done]
+        - in: query
+          name: priority
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - in: query
+          name: assignee_id
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [position, -position, priority, -priority, created_at, -created_at, story_points, -story_points]
+            default: position
+      responses:
+        '200':
+          description: Paginated stories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStories'
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Create a story (owner or member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryInput'
+      responses:
+        '201':
+          description: Created story
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story:
+                    $ref: '#/components/schemas/Story'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /projects/{id}/tree:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      summary: Get project stories, task progress, and nested tasks
+      responses:
+        '200':
+          description: Project tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTree'
+        '404':
+          $ref: '#/components/responses/Error'
+  /stories/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      summary: Get a story
+      responses:
+        '200':
+          description: Story
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story:
+                    $ref: '#/components/schemas/Story'
+        '404':
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Update a story (owner or member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoryPatch'
+      responses:
+        '200':
+          description: Updated story
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story:
+                    $ref: '#/components/schemas/Story'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a story and cascade its tasks (owner only)
+      responses:
+        '204':
+          description: Story and tasks deleted
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /stories/{id}/tasks:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      summary: List tasks for a story
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [todo, in_progress, done]
+        - in: query
+          name: assignee_id
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Paginated tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTasks'
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Create a task (owner or member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Created task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+  /tasks/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      summary: Get a task
+      responses:
+        '200':
+          description: Task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Update a task (owner or member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPatch'
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a task (owner or member)
+      responses:
+        '204':
+          description: Task deleted
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /me/tasks:
+    get:
+      summary: List my assigned tasks in active member projects
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [todo, in_progress, done]
+        - in: query
+          name: overdue
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Paginated assigned tasks with story and project names
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTasks'
 components:
   securitySchemes:
     bearerAuth:
@@ -454,3 +719,227 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Activity'
+    Story:
+      type: object
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+        acceptance_criteria:
+          type: string
+          nullable: true
+          maxLength: 5000
+        status:
+          type: string
+          enum: [backlog, in_progress, in_review, done]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        story_points:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        assignee_id:
+          type: integer
+          nullable: true
+        assignee:
+          oneOf:
+            - $ref: '#/components/schemas/User'
+            - type: 'null'
+        position:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    StoryFields:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+        acceptance_criteria:
+          type: string
+          nullable: true
+          maxLength: 5000
+        status:
+          type: string
+          enum: [backlog, in_progress, in_review, done]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        story_points:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        assignee_id:
+          type: integer
+          nullable: true
+    StoryInput:
+      allOf:
+        - $ref: '#/components/schemas/StoryFields'
+        - type: object
+          required: [title]
+    StoryPatch:
+      allOf:
+        - $ref: '#/components/schemas/StoryFields'
+        - type: object
+          minProperties: 1
+          properties:
+            position:
+              type: number
+              minimum: 0
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        story_id:
+          type: integer
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assignee_id:
+          type: integer
+          nullable: true
+        assignee:
+          oneOf:
+            - $ref: '#/components/schemas/User'
+            - type: 'null'
+        estimate_hours:
+          type: number
+          minimum: 0
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        position:
+          type: number
+        story_title:
+          type: string
+        project_id:
+          type: integer
+        project_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskFields:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assignee_id:
+          type: integer
+          nullable: true
+        estimate_hours:
+          type: number
+          minimum: 0
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+    TaskInput:
+      allOf:
+        - $ref: '#/components/schemas/TaskFields'
+        - type: object
+          required: [title]
+    TaskPatch:
+      allOf:
+        - $ref: '#/components/schemas/TaskFields'
+        - type: object
+          minProperties: 1
+          properties:
+            position:
+              type: number
+              minimum: 0
+    StoryTree:
+      allOf:
+        - $ref: '#/components/schemas/Story'
+        - type: object
+          required: [progress, tasks]
+          properties:
+            progress:
+              type: object
+              required: [done_tasks, total_tasks, percent]
+              properties:
+                done_tasks:
+                  type: integer
+                total_tasks:
+                  type: integer
+                percent:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+    ProjectTree:
+      type: object
+      required: [project, stories]
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+        stories:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoryTree'
+    PaginatedStories:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Story'
+    PaginatedTasks:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'

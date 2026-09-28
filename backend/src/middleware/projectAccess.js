@@ -11,6 +11,18 @@ export const PROJECT_PERMISSIONS = Object.freeze({
   'member.role_change': Object.freeze(['owner']),
   'member.remove': Object.freeze(['owner']),
   'activity.read': Object.freeze(['owner', 'member', 'viewer']),
+  'story.list': Object.freeze(['owner', 'member', 'viewer']),
+  'story.read': Object.freeze(['owner', 'member', 'viewer']),
+  'story.create': Object.freeze(['owner', 'member']),
+  'story.update': Object.freeze(['owner', 'member']),
+  'story.delete': Object.freeze(['owner']),
+  'task.list': Object.freeze(['owner', 'member', 'viewer']),
+  'task.read': Object.freeze(['owner', 'member', 'viewer']),
+  'task.create': Object.freeze(['owner', 'member']),
+  'task.update': Object.freeze(['owner', 'member']),
+  'task.delete': Object.freeze(['owner', 'member']),
+  'tree.read': Object.freeze(['owner', 'member', 'viewer']),
+  'my_tasks.read': Object.freeze(['owner', 'member', 'viewer']),
 });
 
 const WRITE_ACTIONS = new Set([
@@ -19,6 +31,12 @@ const WRITE_ACTIONS = new Set([
   'member.add',
   'member.role_change',
   'member.remove',
+  'story.create',
+  'story.update',
+  'story.delete',
+  'task.create',
+  'task.update',
+  'task.delete',
 ]);
 
 const accessRepositories = new WeakMap();

@@ -1,8 +1,11 @@
 @baseUrl = http://localhost:4000/api/v1
 @ownerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImlhdCI6MTc5MDU5NzM3MCwiZXhwIjoxNzkwNjAwOTcwfQ.4o7agckuU0C5akZibpmKnizNT3QAP21VAZxO8UuGOrA
 @memberToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsImlhdCI6MTc5MDU5NzM3MCwiZXhwIjoxNzkwNjAwOTcwfQ.0Wffi0ZP-EXdFPOjEhmLoLr9YIoJ_RHuT9KpGFnE4I4
-@projectId = 1
+@projectId = 2
 @memberId = 3
+@storyId = 1
+@taskId = 1
+@assigneeId = 3
 
 ### Create a project (the caller is added as owner)
 POST {{baseUrl}}/projects
@@ -73,6 +76,83 @@ Authorization: Bearer {{ownerToken}}
 ### Restore an archived project
 POST {{baseUrl}}/projects/{{projectId}}/restore
 Authorization: Bearer {{ownerToken}}
+
+### List stories with filters, sorting, and pagination
+GET {{baseUrl}}/projects/{{projectId}}/stories?status=in_progress&priority=high&sort=-created_at&limit=20&offset=0
+Authorization: Bearer {{ownerToken}}
+
+### Create a story
+POST {{baseUrl}}/projects/{{projectId}}/stories
+Authorization: Bearer {{ownerToken}}
 Content-Type: application/json
 
-{}
+{
+  "title": "Example user story",
+  "description": "A short description",
+  "acceptance_criteria": "The feature works for project members.",
+  "priority": "high",
+  "story_points": 5
+}
+
+### Read the complete project tree
+GET {{baseUrl}}/projects/{{projectId}}/tree
+Authorization: Bearer {{ownerToken}}
+
+### List tasks for a story
+GET {{baseUrl}}/stories/{{storyId}}/tasks?status=todo&limit=20&offset=0
+Authorization: Bearer {{ownerToken}}
+
+### Create a task
+POST {{baseUrl}}/stories/{{storyId}}/tasks
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "title": "Implement the first step",
+  "description": "Complete the initial implementation",
+  "assignee_id": {{assigneeId}},
+  "estimate_hours": 3,
+  "due_date": "2026-10-15"
+}
+
+### Read or update a story (replace storyId)
+GET {{baseUrl}}/stories/{{storyId}}
+Authorization: Bearer {{ownerToken}}
+
+###
+PATCH {{baseUrl}}/stories/{{storyId}}
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "position": 2000
+}
+
+### Read or update a task (replace taskId)
+GET {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{ownerToken}}
+
+###
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{ownerToken}}
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### List my assigned tasks and overdue tasks
+GET {{baseUrl}}/me/tasks?limit=20&offset=0
+Authorization: Bearer {{ownerToken}}
+
+###
+GET {{baseUrl}}/me/tasks?overdue=true
+Authorization: Bearer {{ownerToken}}
+
+### Delete a task (member or owner)
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{ownerToken}}
+
+### Delete a story and cascade its tasks (owner only)
+DELETE {{baseUrl}}/stories/{{storyId}}
+Authorization: Bearer {{ownerToken}}

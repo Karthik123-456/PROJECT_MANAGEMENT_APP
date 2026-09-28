@@ -5,6 +5,7 @@ import { env } from '../src/config/env.js';
 import { createConnection } from '../src/db/connection.js';
 import { migrate } from '../src/db/migrate.js';
 import { createUserRepository } from '../src/repositories/userRepository.js';
+import { createDemoSeedRepository } from '../src/repositories/demoSeedRepository.js';
 import { logger } from '../src/utils/logger.js';
 
 const BCRYPT_COST = 12;
@@ -55,6 +56,21 @@ async function runSeed() {
       for (const user of usersToSeed) {
         userRepository.createUserIfAbsent(user);
       }
+    }).immediate();
+
+    const demoSeedRepository = createDemoSeedRepository(db);
+    db.transaction(() => {
+      if (demoSeedRepository.demoProjectExists('alice@agile-tool.test')) return;
+      const userIds = demoSeedRepository.findSeedUsers(
+        'alice@agile-tool.test',
+        'bob@agile-tool.test',
+        'charlie@agile-tool.test',
+      );
+      demoSeedRepository.createDemoProject({
+        aliceId: userIds['alice@agile-tool.test'],
+        bobId: userIds['bob@agile-tool.test'],
+        charlieId: userIds['charlie@agile-tool.test'],
+      });
     }).immediate();
 
     const credentials = seedUsers
