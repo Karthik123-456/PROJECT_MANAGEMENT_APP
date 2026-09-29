@@ -1,4 +1,9 @@
-import type { ValidationIssue } from './types.ts'
+import type {
+  Notification,
+  NotificationListQuery,
+  PaginatedList,
+  ValidationIssue,
+} from './types.ts'
 
 // localStorage survives reloads but is JavaScript-readable; httpOnly cookies reduce XSS token theft but require CSRF defenses.
 const TOKEN_STORAGE_KEY = 'agile.token'
@@ -175,4 +180,30 @@ export async function apiRequest<T>(
   }
 
   return payload as T
+}
+
+export function getNotifications(
+  query: NotificationListQuery = {},
+): Promise<PaginatedList<Notification>> {
+  const params = new URLSearchParams()
+  if (query.unread !== undefined) params.set('unread', String(query.unread))
+  if (query.limit !== undefined) params.set('limit', String(query.limit))
+  if (query.offset !== undefined) params.set('offset', String(query.offset))
+  const suffix = params.size > 0 ? `?${params.toString()}` : ''
+  return apiRequest<PaginatedList<Notification>>(`/notifications${suffix}`)
+}
+
+export function markNotificationRead(
+  id: number,
+): Promise<{ notification: Notification }> {
+  return apiRequest<{ notification: Notification }>(
+    `/notifications/${id}/read`,
+    { method: 'POST' },
+  )
+}
+
+export function markAllNotificationsRead(): Promise<{ updated: number }> {
+  return apiRequest<{ updated: number }>('/notifications/read-all', {
+    method: 'POST',
+  })
 }

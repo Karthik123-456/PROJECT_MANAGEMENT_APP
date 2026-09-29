@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/useAuth.ts'
+import { NotificationBell } from './NotificationBell.tsx'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -20,6 +21,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             Project Manager
           </Link>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="max-w-32 truncate border-r border-line pr-3 text-sm text-secondary sm:max-w-none">
               {user?.name}
             </span>

@@ -185,3 +185,35 @@ export interface MyTask extends Task {
   project_id: number
   project_name: string
 }
+
+export type NotificationType = 'task_completed' | 'story_completed'
+
+export interface CompletionNotificationPayload {
+  kind: NotificationType
+  projectId: number
+  projectName: string
+  storyId: number
+  storyTitle: string
+  taskId?: number
+  taskTitle?: string
+  completedBy: {
+    id: number
+    name: string
+  }
+}
+
+export interface Notification {
+  id: number
+  user_id: number
+  type: NotificationType
+  payload: CompletionNotificationPayload
+  idempotency_key: string
+  read_at: string | null
+  created_at: string
+}
+
+export interface NotificationListQuery {
+  unread?: boolean
+  limit?: number
+  offset?: number
+}

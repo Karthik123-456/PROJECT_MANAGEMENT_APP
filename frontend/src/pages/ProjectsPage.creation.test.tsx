@@ -22,10 +22,10 @@ describe('project creation', () => {
     }
     let created = false
     const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input)
+      const url = new URL(String(input), 'http://localhost')
       let payload: unknown
 
-      if (url.endsWith('/auth/me')) {
+      if (url.pathname.endsWith('/auth/me')) {
         payload = {
           user: {
             id: 3,
@@ -35,16 +35,23 @@ describe('project creation', () => {
             created_at: '2026-09-28T00:00:00.000Z',
           },
         }
-      } else if (url.endsWith('/projects') && init?.method === 'POST') {
+      } else if (url.pathname.endsWith('/notifications')) {
+        payload = { data: [], total: 0, limit: 20, offset: 0 }
+      } else if (url.pathname.endsWith('/projects') && init?.method === 'POST') {
         created = true
         payload = { project }
-      } else {
+      } else if (
+        url.pathname.endsWith('/projects') &&
+        (init?.method === undefined || init.method === 'GET')
+      ) {
         payload = {
           data: created ? [project] : [],
           total: created ? 1 : 0,
           limit: 20,
           offset: 0,
         }
+      } else {
+        throw new Error(`Unexpected mocked fetch: ${init?.method ?? 'GET'} ${url.pathname}${url.search}`)
       }
 
       return new Response(JSON.stringify(payload), {
