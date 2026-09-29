@@ -14,6 +14,7 @@ const envSchema = z.object({
   JOB_POLL_MS: z.coerce.number().int().positive().default(1000),
   JOB_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   JOB_LOCK_TIMEOUT_MS: z.coerce.number().int().positive().default(300000),
+  REMINDER_SCAN_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
   SIMULATE_EMAIL_FAILURE_RATE: z.coerce.number().min(0).max(1).default(0),
 });
 

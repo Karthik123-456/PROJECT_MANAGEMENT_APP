@@ -6,11 +6,13 @@ import { createConnection } from '../db/connection.js';
 import { migrate } from '../db/migrate.js';
 import { logger } from '../utils/logger.js';
 import { sendNotification } from './handlers/sendNotification.js';
+import { dueReminderScan } from './handlers/dueReminderScan.js';
 import { claim, complete, fail, recoverStuck } from './queue.js';
 import { startRecovery } from './scheduler.js';
 
 const handlers = Object.freeze({
   send_notification: sendNotification,
+  due_reminder_scan: dueReminderScan,
 });
 
 export async function processNextJob({

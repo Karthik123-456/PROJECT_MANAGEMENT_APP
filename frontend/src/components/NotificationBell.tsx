@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import type { Notification, NotificationType } from '../api/types.ts'
+import type { Notification } from '../api/types.ts'
 import {
   useNotificationList,
   useNotificationMutations,
@@ -8,11 +8,16 @@ import {
 } from '../projects/useNotifications.ts'
 
 function notificationMessage(notification: Notification): string {
-  const { payload } = notification
   if (notification.type === 'task_completed') {
-    return `${payload.completedBy.name} completed task '${payload.taskTitle}' in ${payload.projectName}`
+    return `${notification.payload.completedBy.name} completed task '${notification.payload.taskTitle}' in ${notification.payload.projectName}`
   }
-  return `${payload.completedBy.name} completed story '${payload.storyTitle}' in ${payload.projectName}`
+  if (notification.type === 'story_completed') {
+    return `${notification.payload.completedBy.name} completed story '${notification.payload.storyTitle}' in ${notification.payload.projectName}`
+  }
+  if (notification.type === 'task_due_soon') {
+    return `Task '${notification.payload.taskTitle}' in story '${notification.payload.storyTitle}' in ${notification.payload.projectName} is due soon (due ${notification.payload.dueDate})`
+  }
+  return `Task '${notification.payload.taskTitle}' in story '${notification.payload.storyTitle}' in ${notification.payload.projectName} is overdue (due ${notification.payload.dueDate})`
 }
 
 function relativeTime(timestamp: string, now = Date.now()): string {
@@ -27,10 +32,6 @@ function relativeTime(timestamp: string, now = Date.now()): string {
   const months = Math.floor(days / 30)
   if (months < 12) return `${months}mo ago`
   return `${Math.floor(days / 365)}y ago`
-}
-
-function isCompletionType(type: NotificationType): boolean {
-  return type === 'task_completed' || type === 'story_completed'
 }
 
 export function NotificationBell() {
@@ -194,9 +195,7 @@ export function NotificationBell() {
                   />
                   <span className="min-w-0 flex-1">
                     <span className={`block text-sm text-ink ${unread ? 'font-semibold' : 'font-normal'}`}>
-                      {isCompletionType(notification.type)
-                        ? notificationMessage(notification)
-                        : 'Project activity notification'}
+                      {notificationMessage(notification)}
                     </span>
                     <time
                       className="mt-1 block text-xs text-muted"

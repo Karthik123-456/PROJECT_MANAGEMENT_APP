@@ -697,7 +697,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [task_completed, story_completed]
+          enum: [task_completed, story_completed, task_due_soon, task_overdue]
         payload:
           type: object
         idempotency_key:

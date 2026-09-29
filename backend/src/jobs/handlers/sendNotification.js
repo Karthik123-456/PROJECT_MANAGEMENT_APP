@@ -16,13 +16,14 @@ export function createSendNotificationHandler({
 
     const repository = createNotificationRepository(db);
     return db.transaction(() => {
-      const owner = repository.findProjectOwner(payload.projectId);
-      if (!owner) {
-        throw new Error(`Project ${payload.projectId} has no owner`);
+      const recipientId = payload.recipientId
+        ?? repository.findProjectOwner(payload.projectId)?.user_id;
+      if (!recipientId) {
+        throw new Error(`No notification recipient found for project ${payload.projectId}`);
       }
 
       repository.create({
-        userId: owner.user_id,
+        userId: recipientId,
         type: payload.kind,
         payload,
         idempotencyKey: job.idempotency_key,
@@ -35,7 +36,7 @@ export function createSendNotificationHandler({
       logger.info({
         kind: payload.kind,
         projectId: payload.projectId,
-        recipientId: owner.user_id,
+        recipientId,
       }, 'Simulated notification email sent');
 
       return { notificationQueued: true };

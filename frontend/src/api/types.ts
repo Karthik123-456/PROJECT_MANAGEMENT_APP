@@ -186,10 +186,14 @@ export interface MyTask extends Task {
   project_name: string
 }
 
-export type NotificationType = 'task_completed' | 'story_completed'
+export type NotificationType =
+  | 'task_completed'
+  | 'story_completed'
+  | 'task_due_soon'
+  | 'task_overdue'
 
 export interface CompletionNotificationPayload {
-  kind: NotificationType
+  kind: 'task_completed' | 'story_completed'
   projectId: number
   projectName: string
   storyId: number
@@ -202,15 +206,52 @@ export interface CompletionNotificationPayload {
   }
 }
 
-export interface Notification {
+export interface DueReminderNotificationPayload {
+  kind: 'task_due_soon' | 'task_overdue'
+  recipientId: number
+  taskId: number
+  taskTitle: string
+  storyTitle: string
+  projectId: number
+  projectName: string
+  dueDate: string
+}
+
+interface NotificationFields {
   id: number
   user_id: number
-  type: NotificationType
-  payload: CompletionNotificationPayload
   idempotency_key: string
   read_at: string | null
   created_at: string
 }
+
+export type Notification = NotificationFields &
+  (
+    | {
+        type: 'task_completed'
+        payload: Omit<CompletionNotificationPayload, 'kind'> & {
+          kind: 'task_completed'
+        }
+      }
+    | {
+        type: 'story_completed'
+        payload: Omit<CompletionNotificationPayload, 'kind'> & {
+          kind: 'story_completed'
+        }
+      }
+    | {
+        type: 'task_due_soon'
+        payload: Omit<DueReminderNotificationPayload, 'kind'> & {
+          kind: 'task_due_soon'
+        }
+      }
+    | {
+        type: 'task_overdue'
+        payload: Omit<DueReminderNotificationPayload, 'kind'> & {
+          kind: 'task_overdue'
+        }
+      }
+  )
 
 export interface NotificationListQuery {
   unread?: boolean

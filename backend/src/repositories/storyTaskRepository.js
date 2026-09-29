@@ -64,6 +64,27 @@ export function createStoryTaskRepository(db) {
     JOIN users actor ON actor.id = ?
     WHERE t.id = ?
   `);
+  const listTasksForDueRemindersStatement = db.prepare(`
+    SELECT t.id AS task_id, t.title AS task_title, t.due_date,
+           t.assignee_id, assignee.name AS assignee_name,
+           s.title AS story_title,
+           p.id AS project_id, p.name AS project_name
+    FROM tasks t
+    JOIN users assignee ON assignee.id = t.assignee_id
+    JOIN user_stories s ON s.id = t.story_id
+    JOIN projects p ON p.id = s.project_id
+    WHERE t.status != 'done'
+      AND t.assignee_id IS NOT NULL
+      AND t.due_date IS NOT NULL
+      AND (
+        t.due_date < @utcToday
+        OR (
+          t.due_date >= @utcToday
+          AND t.due_date <= @dueSoonThroughDate
+        )
+      )
+    ORDER BY t.due_date, t.id
+  `);
   const countStoriesStatement = db.prepare(`
     SELECT COUNT(*) AS total FROM user_stories s
     WHERE s.project_id = @projectId
@@ -250,6 +271,12 @@ export function createStoryTaskRepository(db) {
     getTask: (id) => decodeAssignee(getTaskStatement.get(id)),
     getTaskCompletionContext: (taskId, actorId) =>
       getTaskCompletionContextStatement.get(actorId, taskId) ?? null,
+    listTasksForDueReminders({ utcToday, dueSoonThroughDate }) {
+      return listTasksForDueRemindersStatement.all({
+        utcToday,
+        dueSoonThroughDate,
+      });
+    },
     listTasks({ storyId, status = null, assigneeId = null, limit, offset }) {
       const params = { storyId, status, assigneeId, limit, offset };
       return {

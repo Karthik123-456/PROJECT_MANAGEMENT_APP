@@ -3,29 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Notification } from '../api/types.ts'
 import { AuthProvider } from '../auth/AuthContext.tsx'
 import { AppLayout } from './AppLayout.tsx'
 
-interface NotificationFixture {
-  id: number
-  user_id: number
-  type: 'task_completed' | 'story_completed'
-  payload: {
-    kind: 'task_completed' | 'story_completed'
-    projectId: number
-    projectName: string
-    storyId: number
-    storyTitle: string
-    taskId?: number
-    taskTitle?: string
-    completedBy: { id: number; name: string }
-  }
-  idempotency_key: string
-  read_at: string | null
-  created_at: string
-}
-
-const notification: NotificationFixture = {
+const notification: Notification = {
   id: 71,
   user_id: 3,
   type: 'task_completed',
@@ -44,7 +26,7 @@ const notification: NotificationFixture = {
   created_at: new Date().toISOString(),
 }
 
-function stubApi(initialNotifications: NotificationFixture[] = [notification]) {
+function stubApi(initialNotifications: Notification[] = [notification]) {
   let notifications = initialNotifications
   const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
     const url = String(input)
@@ -197,5 +179,50 @@ describe('notification bell', () => {
       name: 'Notifications, no unread notifications',
     }))
     expect(await screen.findByText('No notifications yet')).toBeInTheDocument()
+  })
+
+  it.each([
+    ['task_due_soon', 'is due soon'],
+    ['task_overdue', 'is overdue'],
+  ] as const)('renders the %s reminder sentence', async (type, phrase) => {
+    const reminder: Notification = type === 'task_due_soon'
+      ? {
+          ...notification,
+          type: 'task_due_soon',
+          payload: {
+            kind: 'task_due_soon',
+            recipientId: 3,
+            taskId: 73,
+            taskTitle: 'Implement feature',
+            storyTitle: 'Planning',
+            projectId: 41,
+            projectName: 'Project Alpha',
+            dueDate: '2026-09-30',
+          },
+        }
+      : {
+          ...notification,
+          type: 'task_overdue',
+          payload: {
+            kind: 'task_overdue',
+            recipientId: 3,
+            taskId: 73,
+            taskTitle: 'Implement feature',
+            storyTitle: 'Planning',
+            projectId: 41,
+            projectName: 'Project Alpha',
+            dueDate: '2026-09-30',
+          },
+        }
+    stubApi([reminder])
+    const user = userEvent.setup()
+    renderLayout()
+
+    await user.click(await screen.findByRole('button', {
+      name: 'Notifications, 1 unread',
+    }))
+    expect(await screen.findByRole('button', {
+      name: new RegExp(`Task 'Implement feature' in story 'Planning' in Project Alpha ${phrase} \\(due 2026-09-30\\)`),
+    })).toBeInTheDocument()
   })
 })
