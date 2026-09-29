@@ -1,3 +1,4 @@
+backend/requests/
 node_modules/
 .env
 *.db

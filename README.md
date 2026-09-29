@@ -9,6 +9,18 @@ The frontend is a React and TypeScript single-page app. The backend is an
 Express API backed by SQLite. A separate background worker processes queued
 notifications and periodically scans for due-date reminders.
 
+## Clone and enter the project
+
+Clone the repository, then change into the folder Git created for it:
+
+```bash
+git clone <repository-url>
+cd <repository-folder>
+```
+
+Replace `<repository-url>` with the repository's URL and `<repository-folder>`
+with the folder name created by `git clone` (usually the repository name).
+
 ## Prerequisites
 
 - Node.js 22 LTS or newer and npm.
@@ -18,64 +30,56 @@ notifications and periodically scans for due-date reminders.
 
 ## Local setup
 
-Open PowerShell in the project root:
+From the project root, install dependencies and create the local environment
+files. Run these setup commands once:
 
-```powershell
-Set-Location C:\path\to\agile-tool
-```
-
-Install backend dependencies and create its local environment file:
-
-```powershell
-Set-Location .\backend
+```bash
+cd backend
 npm ci
-Copy-Item .env.example .env
+cp .env.example .env
+cd ../frontend
+npm ci
+cp .env.example .env
 ```
 
-Edit `backend\.env` and replace `JWT_SECRET` with a private random value of at
+Edit `backend/.env` and replace `JWT_SECRET` with a private random value of at
 least 16 characters. Keep `.env` local; do not commit it.
-
-Install frontend dependencies and create its optional environment file:
-
-```powershell
-Set-Location ..\frontend
-npm ci
-Copy-Item .env.example .env
-```
 
 Leave `VITE_API_URL` empty for local development. Vite proxies `/api` requests
 to the backend at `http://localhost:4000`.
 
 ## Initialize the database
 
-From the backend directory, run migrations and optionally add demo data:
+From the project root, initialize the database and optionally add demo data:
 
-```powershell
-Set-Location ..\backend
+```bash
+cd backend
 npm run migrate
 npm run seed
+cd ..
 ```
 
-SQLite creates the database at `backend\data\app.db` by default. The seed
+SQLite creates the database at `backend/data/app.db` by default. The seed
 command creates local demo users and a sample project. It prints the demo
 credentials; use them only for local development. Existing seeded users are
 not updated by running the seed command again.
 
 ## Run the app
 
-Start each process in its own terminal and leave all three running.
+Open three terminals in the project root and leave all three processes
+running. In each terminal, run the corresponding commands:
 
 **Terminal 1 — backend API:**
 
-```powershell
-Set-Location C:\path\to\agile-tool\backend
+```bash
+cd backend
 npm run dev
 ```
 
 **Terminal 2 — background worker:**
 
-```powershell
-Set-Location C:\path\to\agile-tool\backend
+```bash
+cd backend
 npm run worker
 ```
 
@@ -84,8 +88,8 @@ notifications are stored in the database; email delivery is simulated.
 
 **Terminal 3 — frontend:**
 
-```powershell
-Set-Location C:\path\to\agile-tool\frontend
+```bash
+cd frontend
 npm run dev
 ```
 
@@ -108,14 +112,16 @@ See [AI usage](docs/AI_usage.md) for how AI tools supported development.
 
 Run the backend checks from `backend`:
 
-```powershell
+```bash
+cd backend
 npm test
 npm run lint
 ```
 
 Run the frontend checks from `frontend`:
 
-```powershell
+```bash
+cd frontend
 npm test
 npm run lint
 npm run build
