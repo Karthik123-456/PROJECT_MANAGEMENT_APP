@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { AppError } from '../utils/AppError.js';
 import { getUtcToday } from '../utils/date.js';
+import { enqueue } from '../jobs/queue.js';
 
 function missingAssignee() {
   return new AppError(
@@ -33,7 +35,11 @@ export function createStoryTaskService(
   db,
   repository,
   activityService,
-  { today = getUtcToday } = {},
+  {
+    today = getUtcToday,
+    now = () => new Date(),
+    createEventSuffix = randomUUID,
+  } = {},
 ) {
   function validateAssignee(projectId, assigneeId) {
     if (assigneeId != null && !repository.isProjectMember(projectId, assigneeId)) {
@@ -43,6 +49,33 @@ export function createStoryTaskService(
 
   function record({ projectId, actorId, entityType, entityId, action, meta }) {
     activityService.record({ projectId, actorId, entityType, entityId, action, meta });
+  }
+
+  function enqueueCompletionNotification(kind, resourceId, context) {
+    const isTask = kind === 'task_completed';
+    const timestamp = now().toISOString();
+    const idempotencyKey =
+      `${isTask ? 'task' : 'story'}-${resourceId}-completed-${timestamp}-${createEventSuffix()}`;
+    const payload = {
+      kind,
+      projectId: context.project_id,
+      projectName: context.project_name,
+      storyId: context.story_id,
+      storyTitle: context.story_title,
+      ...(isTask
+        ? { taskId: context.task_id, taskTitle: context.task_title }
+        : {}),
+      completedBy: {
+        id: context.completed_by_id,
+        name: context.completed_by_name,
+      },
+    };
+
+    enqueue(db, {
+      type: 'send_notification',
+      payload,
+      idempotencyKey,
+    });
   }
 
   return {
@@ -128,7 +161,12 @@ export function createStoryTaskService(
           meta: eventMeta(changedFields, statusMeta(current.status, nextStatus)),
         });
         if (statusChangedToDone) {
-          // STEP 7: enqueue send_notification
+          const context = requireResource(
+            repository.getStoryCompletionContext(storyId, actorId),
+          );
+          if (context.owner_id !== actorId) {
+            enqueueCompletionNotification('story_completed', storyId, context);
+          }
         }
       }).immediate();
       return story;
@@ -224,7 +262,14 @@ export function createStoryTaskService(
           // STEP 7: enqueue send_notification
         }
         if (current.status !== nextStatus) {
-          // STEP 7: enqueue send_notification
+          if (current.status !== 'done' && nextStatus === 'done') {
+            const context = requireResource(
+              repository.getTaskCompletionContext(taskId, actorId),
+            );
+            if (context.owner_id !== actorId) {
+              enqueueCompletionNotification('task_completed', taskId, context);
+            }
+          }
         }
       }).immediate();
       return task;

@@ -517,6 +517,113 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTasks'
+  /notifications:
+    get:
+      summary: List the authenticated user's notifications
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: unread
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Paginated notifications belonging to the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotifications'
+        '401':
+          $ref: '#/components/responses/Error'
+  /notifications/read-all:
+    post:
+      summary: Mark all of the authenticated user's notifications as read
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated]
+                properties:
+                  updated:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Error'
+  /notifications/{id}/read:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      summary: Mark one of the authenticated user's notifications as read
+      responses:
+        '200':
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notification]
+                properties:
+                  notification:
+                    $ref: '#/components/schemas/Notification'
+        '404':
+          $ref: '#/components/responses/Error'
+  /admin/jobs:
+    get:
+      summary: List jobs (administrator only)
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, running, succeeded, dead]
+            default: dead
+      responses:
+        '200':
+          description: Paginated jobs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJobs'
+        '403':
+          $ref: '#/components/responses/Error'
+  /admin/jobs/{id}/retry:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      summary: Retry a dead job (administrator only)
+      responses:
+        '200':
+          description: Reset job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job]
+                properties:
+                  job:
+                    $ref: '#/components/schemas/Job'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     bearerAuth:
@@ -580,6 +687,75 @@ components:
           type: integer
         offset:
           type: integer
+    Notification:
+      type: object
+      required: [id, user_id, type, payload, idempotency_key, read_at, created_at]
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        type:
+          type: string
+          enum: [task_completed, story_completed]
+        payload:
+          type: object
+        idempotency_key:
+          type: string
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Job:
+      type: object
+      required: [id, type, payload, status, attempts, max_attempts, run_at, created_at]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        payload:
+          type: object
+        status:
+          type: string
+          enum: [pending, running, succeeded, dead]
+        attempts:
+          type: integer
+        max_attempts:
+          type: integer
+        run_at:
+          type: string
+          format: date-time
+        last_error:
+          type: string
+          nullable: true
+        idempotency_key:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    PaginatedNotifications:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+    PaginatedJobs:
+      allOf:
+        - $ref: '#/components/schemas/Pagination'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
     Project:
       type: object
       required: [id, name, description, owner_id, archived_at, created_at, updated_at]

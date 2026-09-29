@@ -7,6 +7,8 @@ import { createAuthRouter } from './routes/auth.js';
 import { createProjectRouter } from './routes/projects.js';
 import { createUsersRouter } from './routes/users.js';
 import { createStoryTaskRouter } from './routes/storiesTasks.js';
+import { createNotificationRouter } from './routes/notifications.js';
+import { createAdminJobsRouter } from './routes/adminJobs.js';
 import { createHealthRepository } from './repositories/healthRepository.js';
 
 export function createApp(db, { rateLimitEnabled } = {}) {
@@ -25,6 +27,8 @@ export function createApp(db, { rateLimitEnabled } = {}) {
   app.use('/api/v1/auth', createAuthRouter(db, { rateLimitEnabled }));
   app.use('/api/v1/projects', createProjectRouter(db));
   app.use('/api/v1/users', createUsersRouter(db));
+  app.use('/api/v1/notifications', createNotificationRouter(db));
+  app.use('/api/v1/admin/jobs', createAdminJobsRouter(db));
   app.use('/api/v1', createStoryTaskRouter(db));
 
   app.use((req, res) => {

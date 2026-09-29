@@ -38,6 +38,32 @@ export function createStoryTaskRepository(db) {
   const getStorySummaryStatement = db.prepare(`
     SELECT id, project_id, title, status FROM user_stories WHERE id = ?
   `);
+  const getStoryCompletionContextStatement = db.prepare(`
+    SELECT s.id AS story_id, s.title AS story_title,
+           p.id AS project_id, p.name AS project_name,
+           owner.user_id AS owner_id,
+           actor.id AS completed_by_id, actor.name AS completed_by_name
+    FROM user_stories s
+    JOIN projects p ON p.id = s.project_id
+    JOIN project_members owner
+      ON owner.project_id = p.id AND owner.role = 'owner'
+    JOIN users actor ON actor.id = ?
+    WHERE s.id = ?
+  `);
+  const getTaskCompletionContextStatement = db.prepare(`
+    SELECT t.id AS task_id, t.title AS task_title,
+           s.id AS story_id, s.title AS story_title,
+           p.id AS project_id, p.name AS project_name,
+           owner.user_id AS owner_id,
+           actor.id AS completed_by_id, actor.name AS completed_by_name
+    FROM tasks t
+    JOIN user_stories s ON s.id = t.story_id
+    JOIN projects p ON p.id = s.project_id
+    JOIN project_members owner
+      ON owner.project_id = p.id AND owner.role = 'owner'
+    JOIN users actor ON actor.id = ?
+    WHERE t.id = ?
+  `);
   const countStoriesStatement = db.prepare(`
     SELECT COUNT(*) AS total FROM user_stories s
     WHERE s.project_id = @projectId
@@ -186,6 +212,8 @@ export function createStoryTaskRepository(db) {
   return {
     getStory: (id) => decodeAssignee(getStoryStatement.get(id)),
     getStorySummary: (id) => getStorySummaryStatement.get(id) ?? null,
+    getStoryCompletionContext: (storyId, actorId) =>
+      getStoryCompletionContextStatement.get(actorId, storyId) ?? null,
     listStories({ projectId, status = null, priority = null, assigneeId = null, sort, limit, offset }) {
       const [sortField, direction = 'asc'] = sort.startsWith('-')
         ? [sort.slice(1), 'desc']
@@ -220,6 +248,8 @@ export function createStoryTaskRepository(db) {
       return Boolean(isProjectMemberStatement.get(projectId, userId).is_member);
     },
     getTask: (id) => decodeAssignee(getTaskStatement.get(id)),
+    getTaskCompletionContext: (taskId, actorId) =>
+      getTaskCompletionContextStatement.get(actorId, taskId) ?? null,
     listTasks({ storyId, status = null, assigneeId = null, limit, offset }) {
       const params = { storyId, status, assigneeId, limit, offset };
       return {
